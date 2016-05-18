@@ -15,7 +15,14 @@ public class MonteCarlo {
         while (true) {
             double x = minx + (maxx - minx) * Math.random(); //w/in [minx, maxx)
             double y = miny + (maxy - miny) * Math.random();
-            if (domain.contains(x, y)) totalin++;
+            if (domain.contains(x, y)) {
+System.out.println("(" + x + ", " + y + ") lies inside");
+                totalin++;
+            }
+            else {
+System.out.println("(" + x + ", " + y + ") lies outside");
+            }
+System.out.println();
             totalpoints++;
             regionarea = ((double) totalin / (double) totalpoints) * boundaryarea;
             System.out.println(regionarea);
@@ -31,23 +38,17 @@ public class MonteCarlo {
             d = new Circle(x0, y0, r);
             montecarlo_area(d);
         }
-        if (args[0].equalsIgnoreCase("polygon")) {
+        else if (args[0].equalsIgnoreCase("polygon")) {
             ArrayList<Point> V = new ArrayList<Point>();
-            int i = 0;
-            while (i < args.length && !args[i].equalsIgnoreCase("contains")) {
+            for (int i=1; i<args.length; i++) {
+//System.out.println(new Point(args[i]));
                 V.add(new Point(args[i]));
-                i++;
             }
             d = new Polygon(V);
-            if (i < args.length && args[i].equalsIgnoreCase("contains")) {
-                for (int j=i+1; j<args.length; j++) {
-                    Point P = new Point(args[j]);
-                    System.out.println("polygon.contains"+P+" = " + d.contains(P.x, P.y));
-                }
-            }
-            else {
-                montecarlo_area(d);
-            }
+            Rectangle box = d.getBoundingBox();
+//System.out.println(box);
+//System.out.println("box.area()="+box.area());
+            montecarlo_area(d);
         }
     }
 

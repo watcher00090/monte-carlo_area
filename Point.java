@@ -10,6 +10,7 @@ public class Point {
     //precondition: pointstring = '(' NUMBER ',' NUMBER ')'
     public Point(String pointstring) {
         int commaindex = pointstring.indexOf(',');    
+//System.out.println("commaindex="+commaindex);
         String xstring = pointstring.substring(1, commaindex);
         String ystring = pointstring.substring(commaindex+1, pointstring.length()-1);
         x = Double.parseDouble(xstring);

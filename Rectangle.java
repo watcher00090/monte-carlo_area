@@ -1,3 +1,4 @@
+//(x1, y1) = upper left, (x2, y2) = lower right
 public class Rectangle extends Domain {
     double x1;
     double y1; 
@@ -16,11 +17,15 @@ public class Rectangle extends Domain {
     }
 
     public boolean contains(double x, double y) {
-        return (x1 <= x && x <= x2 && y1 <= y && y <= y2);
+        return (x1 <= x && x <= x2 && y1 >= y && y >= y2);
     }
 
     public double area() {
-        return (x2 - x1) * (y2 - y1);
+        return Math.abs(x2 - x1) * (y1 - y2);
+    }
+
+    public String toString() {
+        return "Rectangle: upper left=(" + x1 + ", " + y1 + "), lower right=("+x2+", "+y2+").";    
     }
     
 }
