@@ -34,9 +34,10 @@ public class Polygon extends Domain {
     }
     
     //rays of choice: y = P.y, pointing to the right
+    //returns unpredicatable results for points on the boundary of P
     public int crossingNumber(Point P) {
-System.out.println("CALLING_CROSSINGNUMBER("+P+")");
-System.out.println();
+//System.out.println("CALLING_CROSSINGNUMBER("+P+")");
+//System.out.println();
         int cn = 0;
         double ε = 1E-3; //tolerance, to account for rounding error
         int i = 0; 
@@ -47,16 +48,16 @@ System.out.println();
             double y1 = (i == V.length - 1 ? V[0].y : V[i+1].y);
             Point p0 = new Point(x0, y0);
             Point p1 = new Point(x1, y1);
-System.out.println("VERTICES:");
-System.out.println("(x0, y0)="+"("+x0+", "+y0+")");
-System.out.println("(x1, y1)="+"("+x1+", "+y1+")");
+//System.out.println("VERTICES:");
+//System.out.println("(x0, y0)="+"("+x0+", "+y0+")");
+//System.out.println("(x1, y1)="+"("+x1+", "+y1+")");
             i++;
             double ymin = min(y0, y1);
             double ymax = max(y0, y1);
             if (isLeft(p0, p1, P) >= 0) {
                 if (equals(P.y, y0, ε) && equals(P.y, y1, ε)) {
-System.out.println("EDGE_LIES_ON_RAY)");
-System.out.println();
+//System.out.println("EDGE_LIES_ON_RAY)");
+//System.out.println();
                     continue; //if edge lies on ray, ignore 
                 }
                 else if (equals(P.y, y1, ε)) {
@@ -110,15 +111,15 @@ System.out.println("cn="+cn);
         return false;
     }
     
-    //Copyright 2000 softSurfer, 2012 Dan Sunday
+    //Copyright 2000 softSurfer, 2012 Dan Sunday (has been modified)
     // isLeft(): tests if a point is Left|On|Right of an infinite line.
     //    Input:  three points P0, P1, and P2
     //    Return: >0 for P2 left of the line through P0 and P1
-    //            =0 for P2  on the line, or if the line is horizontal and P2 is above the line
-    //            <0 for P2  right of the line
+    //            =0 for P2 on the line
+    //            <0 for P2 right of the line, of if the line is horizontal, P2 above or below the line
     private static double isLeft(Point P0, Point P1, Point P2) {
-        if (P0.x == P1.x) return P0.x - P2.x;
-        if (P0.y == P1.y) return P2.y - P0.y; 
+        if (P0.x == P1.x) return P0.x - P2.x; //vertical line
+        if (P0.y == P1.y) return Math.abs(P1.y - P2.y); //horizontal line 
         return ((P1.x - P0.x) * (P2.y - P0.y) - (P2.x -  P0.x) * (P1.y - P0.y));
     }
 
