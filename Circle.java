@@ -15,7 +15,7 @@ public class Circle extends Domain {
     }
 
     public Rectangle getBoundingBox() {
-        return new Rectangle(x0 - r, y0 - r, x0 + r, y0 + r);
+        return new Rectangle(x0 - r, y0 + r, 2*r, 2*r);
     }
 
 }

@@ -8,10 +8,10 @@ public class MonteCarlo {
         Rectangle boundingbox = domain.getBoundingBox();
         double boundaryarea = boundingbox.area();
         double regionarea = 0;
-        double minx = boundingbox.x1;
-        double miny = boundingbox.y2;
-        double maxx = boundingbox.x2;
-        double maxy = boundingbox.y1;
+        double minx = boundingbox.x;
+        double maxy = boundingbox.y;
+        double maxx = boundingbox.x + boundingbox.width;
+        double miny = boundingbox.y - boundingbox.height;
         while (true) {
             double x = minx + (maxx - minx) * Math.random(); //w/in [minx, maxx)
             double y = miny + (maxy - miny) * Math.random();
@@ -36,6 +36,9 @@ System.out.println();
             double y0 = Double.parseDouble(args[2]);
             double r = Double.parseDouble(args[3]);
             d = new Circle(x0, y0, r);
+            Rectangle box = d.getBoundingBox();
+//System.out.println(box);
+//System.out.println("box.area()="+box.area());
             montecarlo_area(d);
         }
         else if (args[0].equalsIgnoreCase("polygon")) {

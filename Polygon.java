@@ -15,7 +15,11 @@ public class Polygon extends Domain {
     }
 
     public boolean contains(double x, double y) {
-        //if (!getBoundingBox().contains(x, y)) return false;
+        if (!getBoundingBox().contains(x, y)) { 
+System.out.println("outside boundingbox");
+            return false;
+        }
+        if (isOnBoundary(x, y)) return true;
         return ((crossingNumber(new Point(x, y)) % 2) == 1);
     }
     
@@ -30,58 +34,68 @@ public class Polygon extends Domain {
             if (V[i].x > maxx) maxx = V[i].x;
             if (V[i].y > maxy) maxy = V[i].y;
         }
-        return new Rectangle(minx, maxy, maxx, miny);
+        return new Rectangle(minx, maxy, maxx - minx, maxy - miny);
     }
-    
-    //rays of choice: y = P.y, pointing to the right
-    //returns unpredicatable results for points on the boundary of P
-    public int crossingNumber(Point P) {
-//System.out.println("CALLING_CROSSINGNUMBER("+P+")");
-//System.out.println();
-        int cn = 0;
-        double ε = 1E-3; //tolerance, to account for rounding error
-        int i = 0; 
-        while (i < V.length) {
+
+    public boolean isOnBoundary(double x, double y) {
+        for (int i=0; i<V.length; i++) { 
             double x0 = V[i].x;
             double y0 = V[i].y;
-            double x1 = (i == V.length - 1 ? V[0].x : V[i+1].x);
-            double y1 = (i == V.length - 1 ? V[0].y : V[i+1].y);
+            double x1 = V[(i+1) % V.length].x;
+            double y1 = V[(i+1) % V.length].y;
             Point p0 = new Point(x0, y0);
             Point p1 = new Point(x1, y1);
-//System.out.println("VERTICES:");
-//System.out.println("(x0, y0)="+"("+x0+", "+y0+")");
-//System.out.println("(x1, y1)="+"("+x1+", "+y1+")");
-            i++;
+            double xmin = min(x0, x1);
+            double xmax = max(x0, x1);
+            double ymin = min(y0, y1);
+            double ymax = max(y0, y1);
+            if (isLeft(p0, p1, new Point(x, y)) == 0 && xmin <= x && x <= xmax && ymin <= y && y <= ymax) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    //rays of choice: directed horizontally from the point to the right
+    //returns unpredicatable results for points on the boundary of P
+    public int crossingNumber(Point P) {
+        int cn = 0;
+        double ε = 1E-3; //tolerance, to account for rounding error
+        for (int i=0; i<V.length; i++) { 
+            double x0 = V[i].x;
+            double y0 = V[i].y;
+            double x1 = V[(i+1) % V.length].x;
+            double y1 = V[(i+1) % V.length].y;
+            Point p0 = new Point(x0, y0);
+            Point p1 = new Point(x1, y1);
             double ymin = min(y0, y1);
             double ymax = max(y0, y1);
             if (isLeft(p0, p1, P) >= 0) {
-//System.out.println("IS_LEFT");
                 if (equals(P.y, y0, ε) && equals(P.y, y1, ε)) {
-//System.out.println("EDGE_LIES_ON_RAY)");
-//System.out.println();
                     continue; //if edge lies on ray, ignore 
                 }
                 else if (equals(P.y, y1, ε)) {
-//System.out.println("EDGE_ENDS_ON_RAY)");
-//System.out.println();
                     continue; //if edge ends on ray, ignore 
                 }
                 else if (equals(P.y, y0, ε)) {
-//System.out.println("EDGE_STARTS_ON_RAY)");
-//System.out.println();
-                    cn++;
+                    cn++; //if edge starts on ray, increment
                 }
                 else {
                     if (ymin < P.y && P.y < ymax) {
-//System.out.println("P_IS_LEFT_OF_OR_ON_LINE_X0,Y0_TO_X1,Y1_AND_IN_THE_DESIRED_Y_RANGE");
-                        cn++;
+                        cn++; //normal intersection
                     }
                 }
             }
-//System.out.println();
         }
-//System.out.println("cn="+cn);
         return cn;
+    }
+
+    public String toString() {
+        String result = "";
+        for (int i=0; i<V.length; i++) {
+            result = result + " " + V[i].toString();
+        }
+        return result;
     }
 
     public static double min(double a, double b) {
@@ -99,55 +113,21 @@ public class Polygon extends Domain {
         if (b - tolerance <= a && a <= b + tolerance) return true;
         return false;
     }
-
-    //precondition: tolerance >= 0
-    public static boolean greaterThanOrEquals(double a, double b, double tolerance) {
-        if (a + tolerance <= b) return true;
-        return false;
-    }
-
-    //precondition: tolerance >= 0
-    public static boolean greaterThan(double a, double b, double tolerance) {
-        if (a + tolerance < b)  return true;
-        return false;
-    }
     
-    //Copyright 2000 softSurfer, 2012 Dan Sunday (has been modified)
-    // isLeft(): tests if a point is Left|On|Right of an infinite line.
+    //Copyright 2000 softSurfer, 2012 Dan Sunday (Dan's original method has been completely refactored)
     //    Input:  three points P0, P1, and P2
-    //    Return: >0 for P2 left of the line through P0 and P1
+    //    Return: >0 for P2 left of the line through P0 and P1, or above the line if the line is horizontal
     //            =0 for P2 on the line
-    //            <0 for P2 right of the line, of if the line is horizontal, P2 above or below the line
+    //            <0 for P2 right of the line through P0 or P1, or below the line if the line is horizontal
     private static double isLeft(Point P0, Point P1, Point P2) {
         if (P0.x == P1.x) return P0.x - P2.x; //vertical line
-        if (P0.y == P1.y) return -1 * Math.abs(P1.y - P2.y); //horizontal line 
+        if (P0.y == P1.y) return P2.y - P1.y; //horizontal line 
         double m = (P1.y - P0.y) / (P1.x - P0.x);
         double y_at_P2x = m * (P2.x - P0.x) + P0.y;
         return Math.signum(m) * (P2.y - y_at_P2x);
     }
 
-   //Copyright 2000 softSurfer, 2012 Dan Sunday
-    private int windingNumber(Point P) {
-        int wn = 0;  
-        for (int i=0; i<V.length-1; i++) {   // edge from V[i] to  V[i+1]
-            if (V[i].y <= P.y) {          // start y <= P.y
-                if (V[i+1].y  > P.y) {     // an upward crossing
-                    if (isLeft(V[i], V[i+1], P) > 0) {  // P left of  edge
-                        ++wn;            // have  a valid up intersect
-                    }
-                }
-            }
-            else {                        // start y > P.y (no test needed)
-                if (V[i+1].y  <= P.y) {     // a downward crossing
-                    if (isLeft(V[i], V[i+1], P) < 0) {  // P right of  edge
-                        --wn;            // have  a valid down intersect
-                    }
-                }
-            }
-        }
-        return wn;
-    } 
-
+    //unit tests
     public static void main(String[] args) {
         Point p1 = new Point(0, 0);
         Point p2 = new Point(3, 0);
@@ -164,43 +144,31 @@ public class Polygon extends Domain {
         Point pout1 = new Point(-5, 5); //random exterior points
         Point pout2 = new Point(5, 5);
 
-        //System.out.println("isLeft("+p1+", "+p2+", "+p3+") = "+isLeft(p1, p2, p3));
-        //System.out.println("isLeft("+p2+", "+p3+", "+p4+") = "+isLeft(p2, p3, p4));
-        //System.out.println("isLeft("+p3+", "+p4+", "+p5+") = "+isLeft(p3, p4, p5));
-        //System.out.println("isLeft("+p4+", "+p5+", "+p6+") = "+isLeft(p4, p5, p6));
-        //System.out.println();
+        System.out.println("isLeft("+p1+", "+p2+", "+p3+") = "+isLeft(p1, p2, p3));
+        System.out.println("isLeft("+p2+", "+p3+", "+p4+") = "+isLeft(p2, p3, p4));
+        System.out.println("isLeft("+p3+", "+p4+", "+p5+") = "+isLeft(p3, p4, p5));
+        System.out.println("isLeft("+p4+", "+p5+", "+p6+") = "+isLeft(p4, p5, p6));
+        System.out.println();
 
         Point[] V = {p1, p2, p3, p4, p5, p6, p7, p8};
         Polygon poly = new Polygon(V);        
+        System.out.println(V);
 
-        //System.out.println("poly.contains"+p1+" = "+poly.contains(p1.x, p1.y));
-        //System.out.println();
-        //System.out.println("poly.contains"+p2+" = "+poly.contains(p2.x, p2.y));
-        //System.out.println();
-        //System.out.println("poly.contains"+p3+" = "+poly.contains(p3.x, p3.y));
-        //System.out.println();
-        //System.out.println("poly.contains"+p4+" = "+poly.contains(p4.x, p4.y));
-        //System.out.println();
-        //System.out.println("poly.contains"+p5+" = "+poly.contains(p5.x, p5.y));
-        //System.out.println();
-        //System.out.println("poly.contains"+p6+" = "+poly.contains(p6.x, p6.y));
-        //System.out.println();
-        //System.out.println("poly.contains"+p7+" = "+poly.contains(p7.x, p7.y));
-        //System.out.println();
-        //System.out.println("poly.contains"+p8+" = "+poly.contains(p8.x, p8.y));
-        //System.out.println();
-        //System.out.println("poly.contains"+pin1+" = "+poly.contains(pin1.x, pin1.y));
-        //System.out.println();
-        //System.out.println("poly.contains"+pin2+" = "+poly.contains(pin2.x, pin2.y));
-        //System.out.println();
-        //System.out.println("poly.contains"+pin3+" = "+poly.contains(pin3.x, pin3.y));
-        //System.out.println();
-        //System.out.println("poly.contains"+pin4+" = "+poly.contains(pin4.x, pin4.y));
-        //System.out.println();
-        //System.out.println("poly.contains"+pout1+" = "+poly.contains(pout1.x, pout1.y));
-        //System.out.println();
-        //System.out.println("poly.contains"+pout2+" = "+poly.contains(pout2.x, pout2.y));
-        //System.out.println();
+        System.out.println("poly.contains"+p1+" = "+poly.contains(p1.x, p1.y));
+        System.out.println("poly.contains"+p2+" = "+poly.contains(p2.x, p2.y));
+        System.out.println("poly.contains"+p3+" = "+poly.contains(p3.x, p3.y));
+        System.out.println("poly.contains"+p4+" = "+poly.contains(p4.x, p4.y));
+        System.out.println("poly.contains"+p5+" = "+poly.contains(p5.x, p5.y));
+        System.out.println("poly.contains"+p6+" = "+poly.contains(p6.x, p6.y));
+        System.out.println("poly.contains"+p7+" = "+poly.contains(p7.x, p7.y));
+        System.out.println("poly.contains"+p8+" = "+poly.contains(p8.x, p8.y));
+        System.out.println("poly.contains"+pin1+" = "+poly.contains(pin1.x, pin1.y));
+        System.out.println("poly.contains"+pin2+" = "+poly.contains(pin2.x, pin2.y));
+        System.out.println("poly.contains"+pin3+" = "+poly.contains(pin3.x, pin3.y));
+        System.out.println("poly.contains"+pin4+" = "+poly.contains(pin4.x, pin4.y));
+        System.out.println("poly.contains"+pout1+" = "+poly.contains(pout1.x, pout1.y));
+        System.out.println("poly.contains"+pout2+" = "+poly.contains(pout2.x, pout2.y));
+        System.out.println();
 
         Point p9 = new Point(0, 0);
         Point p10 = new Point(1, 0);
@@ -211,35 +179,24 @@ public class Polygon extends Domain {
         
         Point[] V2 = {p9, p10, p11, p12, p13, p14};
         Polygon poly2 = new Polygon(V2);
+        System.out.println(V2);
 
-        //System.out.println("poly2.contains"+p1+" = "+poly2.contains(p1.x, p1.y));
-        //System.out.println();
-        //System.out.println("poly2.contains"+p2+" = "+poly2.contains(p2.x, p2.y));
-        //System.out.println();
-        //System.out.println("poly2.contains"+p3+" = "+poly2.contains(p3.x, p3.y));
-        //System.out.println();
-        //System.out.println("poly2.contains"+p4+" = "+poly2.contains(p4.x, p4.y));
-        //System.out.println();
-        //System.out.println("poly2.contains"+p5+" = "+poly2.contains(p5.x, p5.y));
-        //System.out.println();
-        //System.out.println("poly2.contains"+p6+" = "+poly2.contains(p6.x, p6.y));
-        //System.out.println();
-        //System.out.println("poly2.contains"+p7+" = "+poly2.contains(p7.x, p7.y));
-        //System.out.println();
-        //System.out.println("poly2.contains"+p8+" = "+poly2.contains(p8.x, p8.y));
-        //System.out.println();
-        //System.out.println("poly2.contains"+pin1+" = "+poly2.contains(pin1.x, pin1.y));
-        //System.out.println();
-        //System.out.println("poly2.contains"+pin2+" = "+poly2.contains(pin2.x, pin2.y));
-        //System.out.println();
-        //System.out.println("poly2.contains"+pin3+" = "+poly2.contains(pin3.x, pin3.y));
-        //System.out.println();
-        //System.out.println("poly2.contains"+pin4+" = "+poly2.contains(pin4.x, pin4.y));
-        //System.out.println();
-        //System.out.println("poly2.contains"+pout1+" = "+poly2.contains(pout1.x, pout1.y));
-        //System.out.println();
-        //System.out.println("poly2.contains"+pout2+" = "+poly2.contains(pout2.x, pout2.y));
-        //System.out.println();
-        
+        System.out.println("poly2.contains"+p1+" = "+poly2.contains(p1.x, p1.y));
+        System.out.println("poly2.contains"+p2+" = "+poly2.contains(p2.x, p2.y));
+        System.out.println("poly2.contains"+p3+" = "+poly2.contains(p3.x, p3.y));
+        System.out.println("poly2.contains"+p4+" = "+poly2.contains(p4.x, p4.y));
+        System.out.println("poly2.contains"+p5+" = "+poly2.contains(p5.x, p5.y));
+        System.out.println("poly2.contains"+p6+" = "+poly2.contains(p6.x, p6.y));
+        System.out.println("poly2.contains"+p7+" = "+poly2.contains(p7.x, p7.y));
+        System.out.println("poly2.contains"+p8+" = "+poly2.contains(p8.x, p8.y));
+        System.out.println("poly2.contains"+pin1+" = "+poly2.contains(pin1.x, pin1.y));
+        System.out.println("poly2.contains"+pin2+" = "+poly2.contains(pin2.x, pin2.y));
+        System.out.println("poly2.contains"+pin3+" = "+poly2.contains(pin3.x, pin3.y));
+        System.out.println("poly2.contains"+pin4+" = "+poly2.contains(pin4.x, pin4.y));
+        System.out.println("poly2.contains"+pout1+" = "+poly2.contains(pout1.x, pout1.y));
+        System.out.println("poly2.contains"+pout2+" = "+poly2.contains(pout2.x, pout2.y));
     }
-}
+
+}       
+    
+

@@ -1,15 +1,16 @@
-//(x1, y1) = upper left, (x2, y2) = lower right
+//(x, y) = upper left
+//mathematical rectangle
 public class Rectangle extends Domain {
-    double x1;
-    double y1; 
-    double x2;
-    double y2;
+    double x;
+    double y;
+    double width;
+    double height;
         
-    public Rectangle(double x1, double y1, double x2, double y2) {
-        this.x1 = x1;
-        this.y1 = y1;
-        this.x2 = x2;
-        this.y2 = y2;
+    public Rectangle(double x, double y, double width, double height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
     }
 
     public Rectangle getBoundingBox() {
@@ -17,15 +18,15 @@ public class Rectangle extends Domain {
     }
 
     public boolean contains(double x, double y) {
-        return (x1 <= x && x <= x2 && y1 >= y && y >= y2);
+        return (this.x <= x && x <= (this.x + width) && (this.y - height) <= y && y <= this.y);
     }
 
     public double area() {
-        return Math.abs(x2 - x1) * (y1 - y2);
+        return width*height;
     }
 
     public String toString() {
-        return "Rectangle: upper left=(" + x1 + ", " + y1 + "), lower right=("+x2+", "+y2+").";    
+        return "Rectangle: upper left=(" + x + ", " + y + "), width=" + width + ", height=" + height;
     }
     
 }
